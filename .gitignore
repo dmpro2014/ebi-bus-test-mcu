@@ -1,0 +1,31 @@
+*.zip
+*.swp
+*.swo
+*.un~
+*.s~
+*.c~
+.DS_Store
+*.pyc
+*.py~
+*.gdb
+# emacs buffers
+.#*
+*.*#
+# these are supposed to be removed with make clean
+*.o
+*.elf
+*.bin
+*.hex
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.lock
+
+GNU ARM v4.8.3 - Debug
