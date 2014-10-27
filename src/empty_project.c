@@ -36,7 +36,8 @@ int main(void)
 
     /* Giant or Leopard family. */
 
-    /* Configure GPIO pins as push pull */
+/* --- Configure GPIO pins as push pull -------------------- */
+
     /* EBI AD9..15 */
     GPIO_PinModeSet( gpioPortA,  0, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortA,  1, gpioModePushPull, 0 );
@@ -109,10 +110,9 @@ int main(void)
     GPIO_PinModeSet( gpioPortF, 6, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortF, 7, gpioModePushPull, 0 );
 
-    /* --------------------------------------------------------- */
-    /* Board Control Registers, Bank 0, Base Address 0x80000000  */
-    /* FPGA Xilinx Spartan XC6SLX9 CSG324                        */
-    /* --------------------------------------------------------- */
+/* --------------------------------------------------------- */
+/* First bank needs a name, Bank 0, Base Address 0x80000000  */
+/* --------------------------------------------------------- */
     ebiConfig.banks       = EBI_BANK0;
     ebiConfig.csLines     = EBI_CS0;
     ebiConfig.mode        = ebiModeD16;
@@ -145,13 +145,67 @@ int main(void)
     /* Configure EBI bank 0 */
     EBI_Init(&ebiConfig);
 
+    uint16_t *BANK0_BASE_ADDR = 0x80000000;
+
+/* --------------------------------------------------------- */
+/* Second bank needs a name, Bank 1, Base Address 0x84000000 */
+/* --------------------------------------------------------- */
+    ebiConfig.banks       = EBI_BANK1;
+    ebiConfig.csLines     = EBI_CS1;
+    ebiConfig.mode        = ebiModeD16;
+    ebiConfig.alePolarity = ebiActiveHigh;
+    ebiConfig.location    = ebiLocation1;
+    /* keep blEnable */
+    ebiConfig.blEnable     = false;
+    ebiConfig.addrHalfALE  = false;
+    ebiConfig.readPrefetch = false;
+    ebiConfig.noIdle       = true;
+
+    /* keep alow/ahigh configuration */
+    ebiConfig.aLow = ebiALowA0;
+    ebiConfig.aHigh = ebiAHighA19;
+
+    /* Address Setup and hold time */
+    ebiConfig.addrHoldCycles  = 3;
+    ebiConfig.addrSetupCycles = 3;
+
+    /* Read cycle times */
+    ebiConfig.readStrobeCycles = 7;
+    ebiConfig.readHoldCycles   = 3;
+    ebiConfig.readSetupCycles  = 3;
+
+    /* Write cycle times */
+    ebiConfig.writeStrobeCycles = 7;
+    ebiConfig.writeHoldCycles   = 3;
+    ebiConfig.writeSetupCycles  = 3;
+
+    /* Configure EBI bank 1 */
+    EBI_Init(&ebiConfig);
+
+    uint16_t *BANK1_BASE_ADDR = 0x84000000;
+
+/* --------------------------------------------------------- */
+
   /* Infinite loop */
-    uint16_t *address;
-    address = 0x80000000;
-  while (1) {
-	  *address = 0xffff;
-	  *(address+1) = 0xaaaa;
-	  *(address+2) = 0x8888;
-	  *(address+10) = 0x0001;
-  }
+    int FRAME_SIZE = 128*128;
+    uint16_t *framebuf_addr = BANK0_BASE_ADDR;
+
+    uint16_t colorRed, colorGreen, colorBlue; // 16-bit pixel values
+    colorGreen = 	0b 11111 000000 00000; // Green=max, Red=0, Blue=0
+    colorRed = 		0b0000011111100000; // Green=0, Red=max, Blue=0
+    colorBlue = 	0b0000000000011111; // Green=0, Red=0, Blue=max
+
+
+    for(int offset = 0; offset < FRAME_SIZE; offset++) {
+    	*(framebuf_addr + offset) = ~colorRed;
+    }
+
+    for(int offset = 0; offset < FRAME_SIZE; offset++) {
+    	*(framebuf_addr + offset) = ~colorGreen;
+    }
+
+    for(int offset = 0; offset < FRAME_SIZE; offset++) {
+    	*(framebuf_addr + offset) = ~colorBlue;
+    }
+
 }
