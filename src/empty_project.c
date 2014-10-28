@@ -59,26 +59,17 @@ int main(void)
     GPIO_PinModeSet( gpioPortC,  6, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortC,  7, gpioModePushPull, 0 );
 
-    /* EBI A07-A */
+    /* EBI A07-A14 */
     GPIO_PinModeSet( gpioPortE,  0, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortE,  1, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortE,  2, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortE,  3, gpioModePushPull, 0 );
+    GPIO_PinModeSet( gpioPortC,  9, gpioModePushPull, 0 );
+    GPIO_PinModeSet( gpioPortC,  10, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortE,  4, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortE,  5, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortE,  6, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortE,  7, gpioModePushPull, 0 );
 
-    /* EBI A00-A18 */
-    GPIO_PinModeSet( gpioPortA, 12, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortA, 13, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortA, 14, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortB,  9, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortB, 10, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortC,  6, gpioModePushPull, 0 );
-    GPIO_PinModeSet( gpioPortC,  7, gpioModePushPull, 0 );
-
-
+    /* EBI A15-A18 */
     GPIO_PinModeSet( gpioPortC,  8, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortB,  0, gpioModePushPull, 0 );
     GPIO_PinModeSet( gpioPortB,  1, gpioModePushPull, 0 );
