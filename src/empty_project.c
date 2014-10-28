@@ -178,25 +178,35 @@ int main(void)
 /* --------------------------------------------------------- */
 
   /* Infinite loop */
-    int FRAME_SIZE = 128*128;
+    int FRAME_WIDTH = 128;
+    int FRAME_SIZE = FRAME_WIDTH * FRAME_WIDTH;
     uint16_t *framebuf_addr = BANK0_BASE_ADDR;
 
-    uint16_t colorRed, colorGreen, colorBlue; // 16-bit pixel values
-    colorGreen = 	0b 11111 000000 00000; // Green=max, Red=0, Blue=0
-    colorRed = 		0b0000011111100000; // Green=0, Red=max, Blue=0
-    colorBlue = 	0b0000000000011111; // Green=0, Red=0, Blue=max
+    uint16_t colorRed, colorGreen, colorBlue, colorWhite; // 16-bit pixel values
+    colorGreen = 	0b1111100000000000; // Green=max, Red=0, Blue=0
+    colorRed = 		0b0101111111100011; // Green=0, Red=max, Blue=0
+    colorBlue = 	0b0001100001111111; // Green=0, Red=0, Blue=max
+    colorWhite =    0b1111111111111111;
 
+    int buffer = 0;
+	int offset = 0;
+	int dir = 1;
+	while (true) {
+		for(int i = 0; i < FRAME_SIZE; i++) {
+			uint16_t color;
+			if (i % FRAME_WIDTH > offset && i % FRAME_WIDTH < FRAME_WIDTH-10+offset && i > FRAME_WIDTH * offset && i < FRAME_SIZE - FRAME_WIDTH * (10-offset)) {
+				color = ~colorRed;
+			} else {
+				color = ~colorWhite;
+			}
+			*(framebuf_addr + i) = color;
+		}
 
-    for(int offset = 0; offset < FRAME_SIZE; offset++) {
-    	*(framebuf_addr + offset) = ~colorRed;
-    }
+		offset += dir;
+		if (offset == 9) dir = -1;
+		if (offset == 0) dir = 1;
 
-    for(int offset = 0; offset < FRAME_SIZE; offset++) {
-    	*(framebuf_addr + offset) = ~colorGreen;
-    }
-
-    for(int offset = 0; offset < FRAME_SIZE; offset++) {
-    	*(framebuf_addr + offset) = ~colorBlue;
-    }
-
+		*(framebuf_addr + 0xffff) = buffer;
+		buffer = !buffer;
+	}
 }
