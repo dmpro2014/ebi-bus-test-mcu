@@ -19,6 +19,179 @@
 #include "em_ebi.h"
 #include "em_gpio.h"
 #include "em_cmu.h"
+#include <math.h>
+
+uint16_t color = 0x0000;
+
+typedef struct point {
+	int x;
+	int y;
+} point;
+
+int sgn(int a) {
+	return a >= 0 ? 1 : -1;
+}
+
+uint16_t *BANK0_BASE_ADDR = 0x80000000;
+uint16_t *framebuf_addr = 0x80000000;
+
+void plot_pixel(int x, int y, uint16_t color) {
+	if (y >= 128 || x >= 128) return;
+	if (y < 0 || x < 0) return;
+	*(framebuf_addr + 128 * y + x) = color;
+}
+
+/**************************************************************************
+ *  line_fast                                                             *
+ *    draws a line using Bresenham's line-drawing algorithm, which uses   *
+ *    no multiplication or division.                                      *
+ **************************************************************************/
+
+void line_fast(int x1, int y1, int x2, int y2)
+{
+  int i,dx,dy,sdx,sdy,dxabs,dyabs,x,y,px,py;
+
+  dx=x2-x1;      /* the horizontal distance of the line */
+  dy=y2-y1;      /* the vertical distance of the line */
+  dxabs=abs(dx);
+  dyabs=abs(dy);
+  sdx=sgn(dx);
+  sdy=sgn(dy);
+  x=dyabs>>1;
+  y=dxabs>>1;
+  px=x1;
+  py=y1;
+
+  if (dxabs>=dyabs) /* the line is more horizontal than vertical */
+  {
+    for(i=0;i<dxabs;i++)
+    {
+      y+=dyabs;
+      if (y>=dxabs)
+      {
+        y-=dxabs;
+        py+=sdy;
+      }
+      px+=sdx;
+      plot_pixel(px,py,color);
+    }
+  }
+  else /* the line is more vertical than horizontal */
+  {
+    for(i=0;i<dyabs;i++)
+    {
+      x+=dxabs;
+      if (x>=dyabs)
+      {
+        x-=dyabs;
+        px+=sdx;
+      }
+      py+=sdy;
+      plot_pixel(px,py,color);
+    }
+  }
+}
+
+void screen_clear() {
+	for(int i = 0; i < 128*128; i++) {
+		*(framebuf_addr + i) = 0b1111111111100000;
+	}
+}
+
+void demo_cube(void) {
+
+
+        // Source X, Y and Z of each point of the cube.
+        int x, y, z;
+
+        // Rotation in X and Y.
+        float rx = 0, ry = 0;
+
+        // Computed sin/cos of the rotated X and Y.
+        float sin_rx, cos_rx, sin_ry, cos_ry;
+
+        // Transformed X, Y and Z.
+        float tx, ty, tz;
+
+        // Stores the eight projected vertices.
+        point vertices[8];
+
+        // There's always a need for one of these.
+        unsigned int i;
+
+        // Size of the cube.
+        float rs = 0;
+        float s;
+
+        unsigned int demo_timer = 315;
+
+        int buffer = 0;
+
+        while (demo_timer--) {
+
+                // Calculate the sin/cos of the rotated X and Y.
+                sin_rx = sin(rx);
+                cos_rx = cos(rx);
+                sin_ry = sin(ry);
+                cos_ry = cos(ry);
+
+                // Calculate the size of the cube.
+                s = 40.0f * (1.0f - cos(rs));
+
+                // Calculate each vertex in turn.
+                i = 0;
+                for (x = -1; x <= +1; x += 2) {
+                        for (y = -1; y <= +1; y += 2) {
+                                for (z = -1; z <= +1; z+= 2) {
+
+                                        // Calculate the transformed vertex.
+                                        tx = y * cos_rx - x * sin_rx;
+                                        ty = -x * cos_rx * sin_ry - y * sin_rx * sin_ry - z * cos_ry;
+                                        tz = 3 - x * cos_rx * cos_ry - y * sin_rx * cos_ry + z * sin_ry;
+
+                                        // Project and store.
+                                        vertices[i].x = 64 + (int)(tx * s / tz);
+                                        vertices[i].y = 64 + (int)(ty * s / tz);
+
+                                        // Advance to the next vertex.
+                                        ++i;
+                                }
+                        }
+                }
+
+                // Wait to return back to first scanline.
+                // while (lcd_scan_row);
+
+                // Clear the LCD.
+                screen_clear();
+
+                // One face.
+                line_fast(vertices[0].x, vertices[0].y, vertices[1].x, vertices[1].y);
+                line_fast(vertices[1].x, vertices[1].y, vertices[3].x, vertices[3].y);
+                line_fast(vertices[3].x, vertices[3].y, vertices[2].x, vertices[2].y);
+                line_fast(vertices[2].x, vertices[2].y, vertices[0].x, vertices[0].y);
+
+                // Opposite face.
+                line_fast(vertices[4].x, vertices[4].y, vertices[5].x, vertices[5].y);
+                line_fast(vertices[5].x, vertices[5].y, vertices[7].x, vertices[7].y);
+                line_fast(vertices[7].x, vertices[7].y, vertices[6].x, vertices[6].y);
+                line_fast(vertices[6].x, vertices[6].y, vertices[4].x, vertices[4].y);
+
+                // Connecting the two faces.
+                for (i = 0; i < 4; ++i) {
+                        line_fast(vertices[i].x, vertices[i].y, vertices[i + 4].x, vertices[i + 4].y);
+                }
+                rs += 0.02f;
+                ry += 0.03f;
+                rx += 0.05f;
+                //delay_frames(3);
+
+                *(framebuf_addr + 0xffff) = buffer;
+                buffer = !buffer;
+        }
+
+        screen_clear();
+}
 
 /**************************************************************************//**
  * @brief  Main function
@@ -33,6 +206,8 @@ int main(void)
     /* Enable clocks */
     CMU_ClockEnable(cmuClock_EBI, true);
     CMU_ClockEnable(cmuClock_GPIO, true);
+
+    CMU_HFRCOBandSet(cmuHFRCOBand_28MHz);
 
     /* Giant or Leopard family. */
 
@@ -120,8 +295,9 @@ int main(void)
     ebiConfig.aHigh = ebiAHighA19;
 
     /* Address Setup and hold time */
-    ebiConfig.addrHoldCycles  = 3;
-    ebiConfig.addrSetupCycles = 3;
+    ebiConfig.addrHoldCycles  = 0;
+    ebiConfig.addrSetupCycles = 0;
+
 
     /* Read cycle times */
     ebiConfig.readStrobeCycles = 7;
@@ -129,14 +305,14 @@ int main(void)
     ebiConfig.readSetupCycles  = 3;
 
     /* Write cycle times */
-    ebiConfig.writeStrobeCycles = 7;
-    ebiConfig.writeHoldCycles   = 3;
-    ebiConfig.writeSetupCycles  = 3;
+    ebiConfig.writeStrobeCycles = 0;
+    ebiConfig.writeHoldCycles   = 0;
+    ebiConfig.writeSetupCycles  = 1;
 
     /* Configure EBI bank 0 */
     EBI_Init(&ebiConfig);
 
-    uint16_t *BANK0_BASE_ADDR = 0x80000000;
+
 
 /* --------------------------------------------------------- */
 /* Second bank needs a name, Bank 1, Base Address 0x84000000 */
@@ -157,18 +333,18 @@ int main(void)
     ebiConfig.aHigh = ebiAHighA19;
 
     /* Address Setup and hold time */
-    ebiConfig.addrHoldCycles  = 3;
-    ebiConfig.addrSetupCycles = 3;
+    ebiConfig.addrHoldCycles  = 0;
+    ebiConfig.addrSetupCycles = 0;
 
     /* Read cycle times */
-    ebiConfig.readStrobeCycles = 7;
-    ebiConfig.readHoldCycles   = 3;
-    ebiConfig.readSetupCycles  = 3;
+    ebiConfig.readStrobeCycles = 0;
+    ebiConfig.readHoldCycles   = 0;
+    ebiConfig.readSetupCycles  = 0;
 
     /* Write cycle times */
-    ebiConfig.writeStrobeCycles = 7;
-    ebiConfig.writeHoldCycles   = 3;
-    ebiConfig.writeSetupCycles  = 3;
+    ebiConfig.writeStrobeCycles = 0;
+    ebiConfig.writeHoldCycles   = 0;
+    ebiConfig.writeSetupCycles  = 0;
 
     /* Configure EBI bank 1 */
     EBI_Init(&ebiConfig);
@@ -180,7 +356,7 @@ int main(void)
   /* Infinite loop */
     int FRAME_WIDTH = 128;
     int FRAME_SIZE = FRAME_WIDTH * FRAME_WIDTH;
-    uint16_t *framebuf_addr = BANK0_BASE_ADDR;
+
 
     uint16_t colorRed, colorGreen, colorBlue, colorWhite; // 16-bit pixel values
     colorGreen = 	0b1111100000000000; // Green=max, Red=0, Blue=0
@@ -188,25 +364,7 @@ int main(void)
     colorBlue = 	0b0001100001111111; // Green=0, Red=0, Blue=max
     colorWhite =    0b1111111111111111;
 
-    int buffer = 0;
-	int offset = 0;
-	int dir = 1;
-	while (true) {
-		for(int i = 0; i < FRAME_SIZE; i++) {
-			uint16_t color;
-			if (i % FRAME_WIDTH > offset && i % FRAME_WIDTH < FRAME_WIDTH-10+offset && i > FRAME_WIDTH * offset && i < FRAME_SIZE - FRAME_WIDTH * (10-offset)) {
-				color = ~colorRed;
-			} else {
-				color = ~colorWhite;
-			}
-			*(framebuf_addr + i) = color;
-		}
-
-		offset += dir;
-		if (offset == 9) dir = -1;
-		if (offset == 0) dir = 1;
-
-		*(framebuf_addr + 0xffff) = buffer;
-		buffer = !buffer;
-	}
+    while(1) {
+    	demo_cube();
+    }
 }
