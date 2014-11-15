@@ -192,6 +192,35 @@ void demo_cube(void) {
 
         screen_clear();
 }
+/**************************************************************************//**
+ * @brief  DELAY FUNCTIONS
+ *****************************************************************************/
+/* Counts 1ms timeTicks */
+volatile uint32_t msTicks;
+
+/* Local prototypes */
+void Delay(uint32_t dlyTicks);
+
+/**************************************************************************//**
+ * @brief SysTick_Handler
+ * Interrupt Service Routine for system tick counter
+ *****************************************************************************/
+void SysTick_Handler(void)
+{
+  msTicks++;       /* increment counter necessary in Delay()*/
+}
+
+/**************************************************************************//**
+ * @brief Delays number of msTick Systicks (typically 1 ms)
+ * @param dlyTicks Number of ticks to delay
+ *****************************************************************************/
+void Delay(uint32_t dlyTicks)
+{
+  uint32_t curTicks;
+
+  curTicks = msTicks;
+  while ((msTicks - curTicks) < dlyTicks) ;
+}
 
 /**************************************************************************//**
  * @brief  Main function
@@ -330,26 +359,30 @@ int main(void)
 
     /* keep alow/ahigh configuration */
     ebiConfig.aLow = ebiALowA0;
-    ebiConfig.aHigh = ebiAHighA19;
+    ebiConfig.aHigh = ebiAHighA18;
 
     /* Address Setup and hold time */
-    ebiConfig.addrHoldCycles  = 0;
-    ebiConfig.addrSetupCycles = 0;
+    ebiConfig.addrHoldCycles  = 3;
+    ebiConfig.addrSetupCycles = 3;
 
     /* Read cycle times */
-    ebiConfig.readStrobeCycles = 0;
-    ebiConfig.readHoldCycles   = 0;
-    ebiConfig.readSetupCycles  = 0;
+    ebiConfig.readStrobeCycles = 7;
+    ebiConfig.readHoldCycles   = 3;
+    ebiConfig.readSetupCycles  = 3;
 
     /* Write cycle times */
-    ebiConfig.writeStrobeCycles = 0;
-    ebiConfig.writeHoldCycles   = 0;
-    ebiConfig.writeSetupCycles  = 0;
+    ebiConfig.writeStrobeCycles = 7;
+    ebiConfig.writeHoldCycles   = 3;
+    ebiConfig.writeSetupCycles  = 3;
 
     /* Configure EBI bank 1 */
     EBI_Init(&ebiConfig);
 
     uint16_t *BANK1_BASE_ADDR = 0x84000000;
+
+
+    /* Setup SysTick Timer for 1 msec interrupts  */
+    if (SysTick_Config(CMU_ClockFreqGet(cmuClock_CORE) / 1000)) while (1) ; //delay stuff
 
 /* --------------------------------------------------------- */
 
@@ -365,6 +398,17 @@ int main(void)
     colorWhite =    0b1111111111111111;
 
     while(1) {
-    	demo_cube();
+    	//demo_cube();
+    	uint16_t readValue = 0;
+    	*BANK1_BASE_ADDR = colorBlue;
+    	Delay(1000);
+    	readValue = *BANK1_BASE_ADDR;
+    	*(BANK1_BASE_ADDR + 1) = colorGreen;
+    	Delay(1000);
+    	readValue = *(BANK1_BASE_ADDR + 1);
+    	*(BANK1_BASE_ADDR + 2) = colorRed;
+    	Delay(1000);
+    	readValue = *(BANK1_BASE_ADDR + 2);
+    	continue;
     }
 }
